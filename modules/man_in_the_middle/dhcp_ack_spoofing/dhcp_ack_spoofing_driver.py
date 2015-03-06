@@ -3,8 +3,26 @@
 __author__ = 'redwind'
 
 from dhcp_ack_spoofing import *
+import os
+from subprocess import PIPE, Popen
+
 
 print('DHCP_ack_spoofing module.')
+
+if os.getuid() != 0:
+    print('This tools need to be runned as root!')
+    exit()
+
+p = Popen(['sysctl', 'net.ipv4.ip_forward'], stdout=PIPE, stderr=PIPE)
+(out,err) = p.communicate()
+if int(out.split(' ')[2]) != 1:
+    print('Packet forwarding is not enabled!')
+    activate_forwarding = raw_input('Activate it? (y/n) :')
+    if activate_forwarding == 'y':
+        p1 = Popen(['sysctl', 'net.ipv4.ip_forward=1'], stdout=PIPE, stderr=PIPE)
+        p1.communicate()
+
+
 interface = raw_input('Network interface to listen/spoof :').strip()
 
 print(interface)
