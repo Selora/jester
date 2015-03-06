@@ -1,3 +1,5 @@
+#!/usr/bin/python2
+
 __author__ = 'root'
 
 import scapy.all

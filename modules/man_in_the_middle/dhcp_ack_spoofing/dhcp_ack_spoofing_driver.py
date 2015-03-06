@@ -1,3 +1,5 @@
+#!/usr/bin/python2
+
 __author__ = 'redwind'
 
 from dhcp_ack_spoofing import *
