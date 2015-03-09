@@ -4,6 +4,7 @@ __author__ = 'root'
 
 import scapy.all
 import scapy.layers as layers
+import scapy.arch.linux as arch
 from scapy.sendrecv import *
 import random
 
@@ -66,14 +67,7 @@ class DHCPAckSpoofing:
 
     def scan_dhcp_servers(self, timeout=1):
 
-        dhcp_discover = layers.l2.Ether(dst='ff:ff:ff:ff:ff:ff')/\
-                        layers.inet.IP(src='0.0.0.0', dst='255.255.255.255', id=random.randrange(200, 0xFFFF))/\
-                        layers.inet.UDP(sport=68, dport=67)/\
-                        layers.dhcp.BOOTP(op='BOOTREQUEST', xid=random.randrange(2000, 0xFFFFF))/\
-                        layers.dhcp.DHCP(options=[
-                            ('message-type', 1),
-                            ('hostname', 'localhost'), 'end']
-                            )
+        dhcp_discover = self._build_dhcp_discover()
 
         sendp(
             dhcp_discover,
@@ -103,6 +97,17 @@ class DHCPAckSpoofing:
                 dhcp_server = DomainConfig(gateway=gateway, broadcast=broadcast, netmask=netmask, nameserver=nameserver, domain_name=domain_name)
                 dhcp_mac = packet[layers.l2.Ether].src
                 self.dhcp_servers += [(dhcp_mac, dhcp_ip, dhcp_server)]
+
+    def _build_dhcp_discover(self):
+        fam, hw = arch.get_if_raw_hwaddr(self.interface)
+        return      layers.l2.Ether(dst='ff:ff:ff:ff:ff:ff')/\
+                    layers.inet.IP(src='0.0.0.0', dst='255.255.255.255', id=0)/\
+                    layers.inet.UDP(sport=68, dport=67)/\
+                    layers.dhcp.BOOTP(op='BOOTREQUEST', xid=random.randrange(2000, 0xFFFFF), chaddr=hw)/\
+                    layers.dhcp.DHCP(options=[
+                        ('message-type', 1),
+                        'end']
+                        )
 
     def send_spoofed_ack(self, dhcp_request_udp_packet):
 
