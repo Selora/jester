@@ -54,7 +54,8 @@ class DHCPScanner(abstract_attack.AbstractAttack):
 
         sniffed_packets = sniff(
             timeout=int(self.get_value('response_sniff_timeout')),
-            filter='udp'
+            filter='udp',
+            iface=self.get_value('interface')
             )
 
         return [x for x in sniffed_packets

@@ -1,3 +1,5 @@
+#!/usr/bin/python2
+
 __author__ = 'redwind'
 
 import modules.jester_prompt.jester_prompt as jester_prompt
